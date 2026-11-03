@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Q-Route: how it works</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: "QInter";
+        src: url("assets/fonts/inter-latin-wght-normal.woff2") format("woff2");
+        font-weight: 100 900;
+        font-style: normal;
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: "QInter";
+        src: url("assets/fonts/inter-greek-wght-normal.woff2") format("woff2");
+        font-weight: 100 900;
+        font-style: normal;
+        unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+      }
+      @font-face {
+        font-family: "QMono";
+        src: url("assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+        font-weight: 100 800;
+        font-style: normal;
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: "QMono";
+        src: url("assets/fonts/jetbrains-mono-greek-wght-normal.woff2") format("woff2");
+        font-weight: 100 800;
+        font-style: normal;
+        unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+      }
+
+      :root {
+        --bg: #07080b;
+        --ink: #e6e9ee;
+        --mute: #8b93a1;
+        --blue: #4c8dff;
+        --cyan: #38e8ff;
+        --red: #f85149;
+        --green: #3fb950;
+        --amber: #d29922;
+        --line: rgba(255, 255, 255, 0.09);
+        --panel: rgba(255, 255, 255, 0.025);
+        --zero: rgba(230, 233, 238, 0.16);
+        --sans: "QInter", sans-serif;
+        --mono: "QMono", monospace;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        font-family: var(--sans);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "cv11", "ss01";
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+      }
+      .mono {
+        font-family: var(--mono);
+        font-feature-settings: normal;
+      }
+      .w {
+        display: inline-block;
+      }
+
+      /* ket close bracket and arrows drawn as masks (glyphs not in the subset fonts) */
+      .ket::after {
+        content: "";
+        display: inline-block;
+        width: 0.36em;
+        height: 0.98em;
+        margin-left: 0.04em;
+        vertical-align: -0.17em;
+        background-color: currentColor;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 100' preserveAspectRatio='none'%3E%3Cpolyline points='7,5 29,50 7,95' fill='none' stroke='black' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+          center / 100% 100% no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 100' preserveAspectRatio='none'%3E%3Cpolyline points='7,5 29,50 7,95' fill='none' stroke='black' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+          center / 100% 100% no-repeat;
+      }
+      .arr {
+        display: inline-block;
+        width: 0.95em;
+        height: 0.62em;
+        vertical-align: 0.02em;
+        background-color: currentColor;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 95 62'%3E%3Cpath d='M6 31 H86 M62 8 L87 31 L62 54' fill='none' stroke='black' stroke-width='6.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+          center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 95 62'%3E%3Cpath d='M6 31 H86 M62 8 L87 31 L62 54' fill='none' stroke='black' stroke-width='6.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+          center / contain no-repeat;
+      }
+
+      /* ---------- background ---------- */
+      #bg {
+        position: absolute;
+        inset: 0;
+        background-color: var(--bg);
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1.3px, transparent 1.8px);
+        background-size: 32px 32px;
+        background-position: 16px 16px;
+      }
+
+      /* ---------- HUD ---------- */
+      #hud {
+        position: absolute;
+        inset: 0;
+      }
+      .step {
+        position: absolute;
+        left: 144px;
+        top: 62px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        font-family: var(--mono);
+        font-size: 28px;
+        color: var(--mute);
+        letter-spacing: 0.02em;
+      }
+      .step-num {
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+        height: 36px;
+      }
+      .roll {
+        position: relative;
+        width: 0.62em;
+        height: 36px;
+        overflow: hidden;
+        color: var(--ink);
+      }
+      .roll-col {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .roll-col span {
+        display: block;
+        height: 36px;
+        line-height: 36px;
+      }
+      .segs {
+        display: flex;
+        gap: 6px;
+      }
+      .seg {
+        position: relative;
+        width: 40px;
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+      }
+      .seg i {
+        position: absolute;
+        inset: 0;
+        background: var(--blue);
+        transform-origin: 0 50%;
+        transform: scaleX(0);
+      }
+      .brand {
+        position: absolute;
+        right: 144px;
+        top: 62px;
+        height: 36px;
+        line-height: 36px;
+        font-size: 28px;
+        color: var(--mute);
+        letter-spacing: -0.005em;
+      }
+      .brand b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* ---------- titles & captions ---------- */
+      .title {
+        position: absolute;
+        left: 144px;
+        top: 124px;
+        font-size: 72px;
+        line-height: 88px;
+        font-weight: 600;
+        letter-spacing: -0.028em;
+        white-space: nowrap;
+      }
+      .title .n {
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 64px;
+        color: var(--blue);
+        letter-spacing: 0;
+      }
+      .title .dot {
+        color: #6b7380;
+        margin: 0 0.18em;
+      }
+      .caption {
+        position: absolute;
+        left: 144px;
+        top: 922px;
+        width: 1632px;
+        font-size: 36px;
+        line-height: 48px;
+        color: var(--mute);
+        letter-spacing: -0.008em;
+      }
+      .caption em {
+        font-style: normal;
+        color: var(--ink);
+      }
+
+      /* ---------- right-hand card ---------- */
+      .card {
+        position: absolute;
+        left: 1212px;
+        top: 312px;
+        width: 564px;
+        padding: 40px 44px 44px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+      .card-label {
+        font-size: 28px;
+        line-height: 34px;
+        color: var(--mute);
+        margin-bottom: 26px;
+      }
+      .rule {
+        height: 1px;
+        background: var(--line);
+        margin: 34px 0 30px;
+      }
+
+      /* ---------- flows (q-bit registers) ---------- */
+      .flows {
+        position: absolute;
+        left: 144px;
+        top: 0;
+        width: 972px;
+        height: 1080px;
+      }
+      .flow {
+        position: absolute;
+        top: 0;
+        width: 260px;
+        height: 1080px;
+      }
+      .flow-label {
+        position: absolute;
+        left: 0;
+        top: 262px;
+        width: 260px;
+        text-align: center;
+        font-size: 30px;
+        line-height: 36px;
+        color: var(--mute);
+      }
+      .qbit {
+        position: absolute;
+        top: 0;
+        width: 72px;
+        height: 1080px;
+      }
+      .bar {
+        position: absolute;
+        left: 0;
+        top: 320px;
+        width: 72px;
+        height: 360px;
+        border-radius: 10px;
+        background: var(--zero);
+        overflow: hidden;
+      }
+      .fill {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 100%;
+        background: var(--blue);
+        transform-origin: 50% 100%;
+      }
+      .pval {
+        position: absolute;
+        left: -14px;
+        width: 100px;
+        top: 698px;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 28px;
+        line-height: 34px;
+        color: var(--mute);
+      }
+      .bitbox {
+        position: absolute;
+        left: 0;
+        top: 464px;
+        width: 72px;
+        height: 72px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 40px;
+        font-weight: 600;
+      }
+      .bitbox.one {
+        background: var(--blue);
+        color: var(--bg);
+      }
+      .bitbox.zero {
+        border: 2px solid rgba(230, 233, 238, 0.42);
+        color: var(--ink);
+      }
+      .tbit {
+        position: absolute;
+        left: 8px;
+        top: 762px;
+        width: 56px;
+        height: 56px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 30px;
+        font-weight: 600;
+      }
+      .tbit.one {
+        background: var(--blue);
+        color: var(--bg);
+      }
+      .tbit.zero {
+        border: 2px solid rgba(230, 233, 238, 0.42);
+        color: var(--ink);
+      }
+      .down {
+        position: absolute;
+        left: 112px;
+        top: 556px;
+        width: 36px;
+        height: 84px;
+        overflow: visible;
+      }
+      .down path {
+        fill: none;
+        stroke: var(--mute);
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .pathlab {
+        position: absolute;
+        left: 0;
+        top: 650px;
+        width: 260px;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 40px;
+        line-height: 48px;
+        white-space: pre;
+        color: var(--mute);
+      }
+      .pathlab .c {
+        display: inline-block;
+      }
+      .pathlab .d {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* ---------- beat 1 card ---------- */
+      .eq {
+        font-family: var(--mono);
+        font-size: 40px;
+        line-height: 58px;
+        color: var(--ink);
+        white-space: pre;
+      }
+      .eq .t {
+        display: inline-block;
+      }
+      .eq .k1 {
+        color: var(--blue);
+      }
+      .legend {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .lg {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 30px;
+        line-height: 36px;
+        color: var(--mute);
+      }
+      .lg .sw {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        flex: none;
+      }
+      .lg .mono {
+        color: var(--ink);
+        width: 70px;
+      }
+      .lg .r {
+        margin-left: auto;
+        font-family: var(--mono);
+        color: var(--ink);
+      }
+
+      /* ---------- beat 2 card ---------- */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 104px);
+        gap: 10px;
+      }
+      .cell {
+        height: 52px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.025);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 28px;
+        color: #5d6573;
+        position: relative;
+      }
+      .cell .hl {
+        position: absolute;
+        inset: -1px;
+        border-radius: 8px;
+        border: 2px solid var(--blue);
+        background: rgba(76, 141, 255, 0.12);
+        opacity: 0;
+      }
+      .cell span {
+        position: relative;
+      }
+      .card-foot {
+        margin-top: 24px;
+        font-size: 28px;
+        line-height: 34px;
+        color: var(--mute);
+      }
+      .card-foot .mono {
+        color: var(--ink);
+      }
+
+      /* ---------- beat 3 ---------- */
+      .fcard {
+        position: absolute;
+        left: 144px;
+        top: 284px;
+        width: 1632px;
+        height: 156px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .formula {
+        font-family: var(--mono);
+        font-size: 58px;
+        line-height: 70px;
+        white-space: pre;
+        color: var(--ink);
+      }
+      .formula .t {
+        display: inline-block;
+      }
+      .terms {
+        position: absolute;
+        left: 144px;
+        top: 528px;
+        width: 720px;
+      }
+      .term {
+        display: flex;
+        align-items: baseline;
+        height: 100px;
+        border-bottom: 1px solid var(--line);
+      }
+      .term:last-child {
+        border-bottom: none;
+      }
+      .term .key {
+        width: 170px;
+        font-family: var(--mono);
+        font-size: 40px;
+        font-weight: 600;
+      }
+      .term .desc {
+        font-size: 36px;
+        color: var(--ink);
+      }
+      .race {
+        position: absolute;
+        left: 948px;
+        top: 500px;
+        width: 828px;
+        height: 380px;
+      }
+      .race-head {
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-size: 28px;
+        line-height: 34px;
+        color: var(--mute);
+        white-space: nowrap;
+      }
+      .race-base {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 360px;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.14);
+      }
+      .col {
+        position: absolute;
+        left: 0;
+        bottom: 20px;
+        width: 34px;
+      }
+      .col i {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 34px;
+        height: 100%;
+        border-radius: 6px 6px 2px 2px;
+        background: rgba(230, 233, 238, 0.22);
+        transform-origin: 50% 100%;
+      }
+      .col i.best {
+        background: var(--blue);
+        opacity: 0;
+      }
+      .best-tag {
+        position: absolute;
+        left: 0;
+        top: 132px;
+        font-family: var(--mono);
+        font-size: 28px;
+        line-height: 34px;
+        color: var(--blue);
+        white-space: nowrap;
+      }
+      .best-lead {
+        position: absolute;
+        left: 16px;
+        top: 176px;
+        width: 2px;
+        height: 84px;
+        background: var(--blue);
+        transform-origin: 50% 0;
+      }
+
+      /* ---------- beat 4 card ---------- */
+      .u-head {
+        font-family: var(--mono);
+        font-size: 40px;
+        line-height: 50px;
+        margin-bottom: 22px;
+      }
+      .matrix {
+        position: relative;
+        display: inline-grid;
+        grid-template-columns: auto auto;
+        column-gap: 46px;
+        row-gap: 14px;
+        padding: 14px 30px;
+        font-family: var(--mono);
+        font-size: 38px;
+        line-height: 50px;
+        white-space: pre;
+      }
+      .matrix .m {
+        text-align: right;
+      }
+      .brk {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 14px;
+        border: 2.5px solid var(--mute);
+      }
+      .brk.l {
+        left: 0;
+        border-right: none;
+        border-radius: 4px 0 0 4px;
+      }
+      .brk.r {
+        right: 0;
+        border-left: none;
+        border-radius: 0 4px 4px 0;
+      }
+      .note {
+        font-size: 28px;
+        line-height: 38px;
+        color: var(--mute);
+      }
+
+      /* ---------- loop ---------- */
+      .chips {
+        position: absolute;
+        left: 210px;
+        top: 392px;
+        width: 1500px;
+        height: 90px;
+      }
+      .chip {
+        position: absolute;
+        top: 0;
+        width: 330px;
+        height: 90px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        font-size: 32px;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      .chip .mono {
+        color: var(--blue);
+        font-weight: 500;
+      }
+      .chip-arr {
+        position: absolute;
+        top: 33px;
+        width: 34px;
+        height: 24px;
+        color: #4a515d;
+      }
+      .loop-svg {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: visible;
+      }
+      .loop-svg path {
+        fill: none;
+        stroke: var(--blue);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .loop-line {
+        position: absolute;
+        left: 0;
+        top: 714px;
+        width: 1920px;
+        text-align: center;
+        font-size: 52px;
+        line-height: 64px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      .loop-line .mono {
+        font-weight: 500;
+        letter-spacing: 0;
+        color: var(--blue);
+      }
+      .loop-line .mute {
+        color: var(--mute);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="21.5"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div id="bg" class="clip" data-start="0" data-duration="21.5" data-track-index="0"></div>
+
+      <!-- persistent step indicator + brand -->
+      <div id="hud" class="clip" data-start="0" data-duration="21.5" data-track-index="1">
+        <div class="step">
+          <div class="step-num">
+            <div class="roll" data-layout-allow-overflow>
+              <div class="roll-col" id="roll"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+            </div>
+            <span>/ 4</span>
+          </div>
+          <div class="segs">
+            <div class="seg"><i id="seg1"></i></div>
+            <div class="seg"><i id="seg2"></i></div>
+            <div class="seg"><i id="seg3"></i></div>
+            <div class="seg"><i id="seg4"></i></div>
+          </div>
+        </div>
+        <div class="brand"><b>Q-Route</b> · how it works</div>
+      </div>
+
+      <!-- ================= BEAT 1 · Superposition ================= -->
+      <div id="s1" class="clip scene" data-start="0" data-duration="4.55" data-track-index="2">
+        <h1 class="title" id="s1-title">
+          <span class="w n">1</span><span class="w dot">·</span><span class="w">Superposition</span>
+        </h1>
+        <div class="card" id="s1-card">
+          <div class="card-label">One Q-bit</div>
+          <div class="eq" id="s1-eq"><span class="t">|ψ<span class="ket"></span></span><span class="t"> = </span><span class="t">cos θ </span><span class="t ket">|0</span><br /><span class="t">    + </span><span class="t">sin θ </span><span class="t ket k1">|1</span></div>
+          <div class="rule"></div>
+          <div class="legend">
+            <div class="lg" id="s1-lg0">
+              <span class="sw" style="background: var(--zero)"></span><span class="mono ket">|0</span><span>share</span><span class="r">cos²θ</span>
+            </div>
+            <div class="lg" id="s1-lg1">
+              <span class="sw" style="background: var(--blue)"></span><span class="mono ket">|1</span><span>share</span><span class="r">sin²θ</span>
+            </div>
+          </div>
+        </div>
+        <p class="caption" id="s1-cap">
+          <span class="w">Every</span> <span class="w">flow</span> <span class="w">holds</span> <span class="w"><em>all</em></span> <span class="w"><em>8</em></span> <span class="w"><em>candidate</em></span> <span class="w"><em>paths</em></span> <span class="w">at</span> <span class="w">once</span> <span class="w">—</span> <span class="w">3</span> <span class="w">Q-bits</span> <span class="w">each.</span>
+        </p>
+      </div>
+
+      <!-- flows used by beats 1 and 2 (superposed bars, then measured bits) -->
+      <div id="flowsA" class="clip scene" data-start="0" data-duration="8.55" data-track-index="3">
+        <div class="flows" id="fa"></div>
+      </div>
+
+      <!-- ================= BEAT 2 · Measurement ================= -->
+      <div id="s2" class="clip scene" data-start="4.2" data-duration="4.35" data-track-index="4">
+        <h1 class="title" id="s2-title">
+          <span class="w n">2</span><span class="w dot">·</span><span class="w">Measurement</span>
+        </h1>
+        <div class="card" id="s2-card">
+          <div class="card-label">Sampling rule</div>
+          <div class="eq" style="font-size: 38px">P(bit = 1) = sin²θ</div>
+          <div class="rule"></div>
+          <div class="grid" id="s2-grid">
+            <div class="cell"><span>3·2·7</span></div>
+            <div class="cell"><span>5·0·6</span></div>
+            <div class="cell"><span>1·2·6</span></div>
+            <div class="cell"><span>5·3·4</span></div>
+            <div class="cell"><span>7·2·6</span></div>
+            <div class="cell"><span>0·6·6</span></div>
+            <div class="cell" id="s2-hit"><div class="hl" id="s2-hl"></div><span id="s2-hit-t">5·2·6</span></div>
+            <div class="cell"><span>4·2·5</span></div>
+            <div class="cell"><span>5·1·6</span></div>
+            <div class="cell"><span>6·2·6</span></div>
+            <div class="cell"><span>5·2·7</span></div>
+            <div class="cell"><span>2·4·6</span></div>
+            <div class="cell"><span>5·5·1</span></div>
+            <div class="cell"><span>3·0·6</span></div>
+            <div class="cell"><span>7·1·3</span></div>
+            <div class="cell"><span>5·2·2</span></div>
+          </div>
+          <div class="card-foot" id="s2-foot"><span class="mono">16</span> route sets, one per sample</div>
+        </div>
+        <p class="caption" id="s2-cap">
+          <span class="w">Sampling</span> <span class="w">collapses</span> <span class="w">each</span> <span class="w">register</span> <span class="w">into</span> <span class="w">a</span> <span class="w"><em>concrete</em></span> <span class="w"><em>route.</em></span> <span class="w"><em>16</em></span> <span class="w"><em>route</em></span> <span class="w"><em>sets</em></span> <span class="w">per</span> <span class="w">generation.</span>
+        </p>
+      </div>
+
+      <!-- ================= BEAT 3 · Scoring ================= -->
+      <div id="s3" class="clip scene" data-start="8.2" data-duration="5.05" data-track-index="5">
+        <h1 class="title" id="s3-title">
+          <span class="w n">3</span><span class="w dot">·</span><span class="w">Scoring</span>
+        </h1>
+        <div class="fcard" id="s3-fcard">
+          <div class="formula" id="s3-formula"><span class="t">J</span><span class="t"> = </span><span class="t" id="tok-L">L</span><span class="t"> + </span><span class="t">100·max(0, </span><span class="t" id="tok-M">MLU</span><span class="t"> − 0.8)</span><span class="t"> + </span><span class="t">50·</span><span class="t" id="tok-D">Drop</span></div>
+        </div>
+        <div class="terms">
+          <div class="term" id="term-L"><span class="key" style="color: var(--cyan)">L</span><span class="desc">mean latency</span></div>
+          <div class="term" id="term-M"><span class="key" style="color: var(--amber)">MLU</span><span class="desc">busiest-link load</span></div>
+          <div class="term" id="term-D"><span class="key" style="color: var(--red)">Drop</span><span class="desc">traffic lost</span></div>
+        </div>
+        <div class="race" id="race">
+          <div class="race-head" id="race-head">16 candidates · J per route set, lower is better</div>
+          <div class="race-base" id="race-base"></div>
+          <div class="best-tag" id="best-tag">best · 5·2·6</div>
+          <div class="best-lead" id="best-lead"></div>
+        </div>
+        <p class="caption" id="s3-cap">
+          <span class="w">Each</span> <span class="w">route</span> <span class="w">set</span> <span class="w">is</span> <span class="w">simulated</span> <span class="w">on</span> <span class="w">the</span> <span class="w">network</span> <span class="w">and</span> <span class="w">scored.</span> <span class="w"><em>Lowest</em></span> <span class="w"><em>J</em></span> <span class="w"><em>wins.</em></span>
+        </p>
+      </div>
+
+      <!-- ================= BEAT 4 · Rotation gate ================= -->
+      <div id="s4" class="clip scene" data-start="12.9" data-duration="4.8" data-track-index="6">
+        <h1 class="title" id="s4-title">
+          <span class="w n">4</span><span class="w dot">·</span><span class="w">Rotation</span> <span class="w">gate</span>
+        </h1>
+        <div class="flows" id="fb"></div>
+        <div class="card" id="s4-card">
+          <div class="card-label">Update, per Q-bit</div>
+          <div class="u-head" id="s4-uh">U(Δθ) =</div>
+          <div class="matrix" id="s4-mx">
+            <div class="brk l"></div>
+            <div class="brk r"></div>
+            <span class="m">cos Δθ</span><span class="m">−sin Δθ</span>
+            <span class="m">sin Δθ</span><span class="m"> cos Δθ</span>
+          </div>
+          <div class="rule"></div>
+          <div class="note" id="s4-note">Δθ turns each Q-bit toward the bit the best route set used.</div>
+        </div>
+        <p class="caption" id="s4-cap">
+          <span class="w">Every</span> <span class="w">Q-bit</span> <span class="w">is</span> <span class="w">nudged</span> <span class="w">toward</span> <span class="w">the</span> <span class="w"><em>best</em></span> <span class="w"><em>route</em></span> <span class="w"><em>set</em></span> <span class="w">found</span> <span class="w">so</span> <span class="w">far.</span>
+        </p>
+      </div>
+
+      <!-- ================= LOOP ================= -->
+      <div id="s5" class="clip scene" data-start="17.4" data-duration="4.1" data-track-index="7">
+        <div class="chips">
+          <div class="chip" id="chip1" style="left: 0px"><span class="mono">1</span>Superposition</div>
+          <div class="chip-arr arr" id="ca1" style="left: 343px"></div>
+          <div class="chip" id="chip2" style="left: 390px"><span class="mono">2</span>Measurement</div>
+          <div class="chip-arr arr" id="ca2" style="left: 733px"></div>
+          <div class="chip" id="chip3" style="left: 780px"><span class="mono">3</span>Scoring</div>
+          <div class="chip-arr arr" id="ca3" style="left: 1123px"></div>
+          <div class="chip" id="chip4" style="left: 1170px"><span class="mono">4</span>Rotation gate</div>
+        </div>
+        <svg class="loop-svg" viewBox="0 0 1920 1080">
+          <path id="loop-arc" d="M1545 490 C 1545 650, 375 650, 375 490" />
+          <path id="loop-head" d="M359 512 L375 490 L391 512" />
+        </svg>
+        <div class="loop-line" id="loop-line">
+          <span class="w">repeat <span class="mono">300×</span></span>
+          <span class="w arr mute" style="margin: 0 0.3em"></span>
+          <span class="w"><span class="mono">4,800</span> route sets scored in <span class="mono">0.4 s</span></span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ---------------- data ---------------- */
+      const BITS = [
+        [1, 0, 1],
+        [0, 1, 0],
+        [1, 1, 0],
+      ];
+      const PATHS = [5, 2, 6];
+      const FLOW_X = [0, 356, 712];
+      const BAR_X = [0, 94, 188];
+
+      // Illustrative scores for the 16 sampled route sets (index 6 = 5·2·6, the best).
+      const J = [88.4, 61.2, 72.3, 130.5, 55.0, 96.7, 41.8, 64.1, 118.2, 50.6, 79.9, 58.3, 103.4, 69.5, 84.6, 47.9];
+      const SLOT = 52;
+
+      /* ---------------- build static markup (synchronous, deterministic) ---------------- */
+      function buildFlows(host, withMeasure, withTarget) {
+        const refs = [];
+        for (let f = 0; f < 3; f++) {
+          const flow = document.createElement("div");
+          flow.className = "flow";
+          flow.style.left = FLOW_X[f] + "px";
+          let html = `<div class="flow-label">flow ${f + 1}</div>`;
+          for (let j = 0; j < 3; j++) {
+            const b = BITS[f][j];
+            html += `<div class="qbit" style="left:${BAR_X[j]}px">
+              <div class="bar"><div class="fill"></div></div>
+              <div class="pval">0.50</div>
+              ${withMeasure ? `<div class="bitbox ${b ? "one" : "zero"}">${b}</div>` : ""}
+              ${withTarget ? `<div class="tbit ${b ? "one" : "zero"}">${b}</div>` : ""}
+            </div>`;
+          }
+          if (withMeasure) {
+            html += `<svg class="down" viewBox="0 0 36 84"><path d="M18 4 V78 M7 66 L18 78 L29 66"/></svg>`;
+            const txt = "path " + PATHS[f];
+            html += `<div class="pathlab">${txt
+              .split("")
+              .map((ch, i) => `<span class="c${i === txt.length - 1 ? " d" : ""}">${ch === " " ? "&nbsp;" : ch}</span>`)
+              .join("")}</div>`;
+          }
+          flow.innerHTML = html;
+          host.appendChild(flow);
+          refs.push(flow);
+        }
+        return refs;
+      }
+      const flowsA = buildFlows(document.getElementById("fa"), true, false);
+      const flowsB = buildFlows(document.getElementById("fb"), false, true);
+
+      const race = document.getElementById("race");
+      const cols = J.map((v, i) => {
+        const c = document.createElement("div");
+        c.className = "col";
+        c.style.height = Math.round(56 + ((v - 40) / (131 - 40)) * 250) + "px";
+        c.innerHTML = i === 6 ? `<i></i><i class="best"></i>` : `<i></i>`;
+        race.appendChild(c);
+        return c;
+      });
+      const rank = J.map((v, i) => i).sort((a, b) => J[a] - J[b]);
+      const sortedSlot = [];
+      rank.forEach((idx, r) => (sortedSlot[idx] = r));
+
+      /* ---------------- pacing ----------------
+         Cues below are authored on a compact 14 s grid; W() inserts reading holds at quiet
+         moments (nothing tweening) so every caption stays up long enough to read. */
+      const HOLDS = [
+        [2.6, 0.8], // beat 1: read the superposition caption
+        [6.3, 0.5], // beat 2: read the measured paths
+        [10.385, 1.2], // beat 3: hold on the winning route set
+        [11.8, 2.1], // beat 4: let the rotation nudges play out
+      ];
+      const W = (t) => t + HOLDS.reduce((s, [a, l]) => s + (t >= a ? l : 0), 0);
+      const TOTAL = 21.5;
+      const END_OUT = TOTAL - 0.45; // loop card clears and the HUD resets, so the clip loops seamlessly
+
+      /* ---------------- bar state as a pure function of time ---------------- */
+      const clamp = (x) => Math.max(0, Math.min(1, x));
+      const ioCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+      const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+
+      const fillsA = [], pvA = [], fillsB = [], pvB = [];
+      flowsA.forEach((fl) => {
+        fl.querySelectorAll(".fill").forEach((e) => fillsA.push(e));
+        fl.querySelectorAll(".pval").forEach((e) => pvA.push(e));
+      });
+      flowsB.forEach((fl) => {
+        fl.querySelectorAll(".fill").forEach((e) => fillsB.push(e));
+        fl.querySelectorAll(".pval").forEach((e) => pvB.push(e));
+      });
+
+      function osc(t, i) {
+        const amp = 0.075 * ioCubic(clamp((t - 0.5) / 1.0));
+        return 0.5 + amp * Math.sin(2 * Math.PI * 0.55 * (t - 0.5) + i * 1.15);
+      }
+      // global (paced) time at which each Q-bit bar starts collapsing
+      function collapseStart(f, j) {
+        return W(3.62) + 0.12 * f + 0.05 * j;
+      }
+      // beat 4: three rotation steps, spread across the beat (global time)
+      const NUDGES = [13.95, 14.85, 15.75];
+      function render(t) {
+        for (let f = 0; f < 3; f++) {
+          for (let j = 0; j < 3; j++) {
+            const i = f * 3 + j;
+            const b = BITS[f][j];
+            // beats 1-2
+            const c = ioCubic(clamp((t - collapseStart(f, j)) / 0.32));
+            const pa = osc(t, i) * (1 - c) + b * c;
+            fillsA[i].style.transform = `scaleY(${pa.toFixed(4)})`;
+            pvA[i].textContent = pa.toFixed(2);
+            // beat 4: three rotation steps toward the best bit
+            let k = 0;
+            for (let n = 0; n < NUDGES.length; n++) k += outCubic(clamp((t - NUDGES[n] - 0.03 * i) / 0.45));
+            const pb = 0.5 + 0.022 * Math.sin(i * 2.1) + (b ? 1 : -1) * 0.092 * k;
+            fillsB[i].style.transform = `scaleY(${pb.toFixed(4)})`;
+            pvB[i].textContent = pb.toFixed(2);
+          }
+        }
+      }
+      render(0);
+
+      /* ---------------- timeline ---------------- */
+      // Every cue position goes through W(); collapseStart() and NUDGES are already global time.
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.to(clock, { t: TOTAL, duration: TOTAL, ease: "none", onUpdate: () => render(clock.t) }, 0);
+
+      const BLUR_IN = (targets, at, o = {}) =>
+        tl.fromTo(
+          targets,
+          { opacity: 0, filter: `blur(${o.blur ?? 8}px)`, y: o.y ?? 0, x: o.x ?? 0 },
+          { opacity: 1, filter: "blur(0px)", y: 0, x: 0, duration: o.d ?? 0.55, ease: o.ease ?? "expo.out", stagger: o.s ?? 0 },
+          W(at),
+        );
+      const BLUR_OUT = (targets, at, o = {}) =>
+        tl.fromTo(
+          targets,
+          { opacity: 1, filter: "blur(0px)" },
+          { opacity: 0, filter: `blur(${o.blur ?? 8}px)`, duration: o.d ?? 0.22, ease: "power3.in", stagger: o.s ?? 0, immediateRender: false },
+          o.abs ? at : W(at),
+        );
+      const WORDS_IN = (sel, at, s = 0.03) =>
+        tl.fromTo(
+          `${sel} .w`,
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: s },
+          W(at),
+        );
+
+      /* HUD: step digit roll + progress segments */
+      tl.fromTo("#roll", { y: 0 }, { y: 0, duration: 0.01 }, 0);
+      [3.5, 7.0, 10.5].forEach((at, k) =>
+        tl.fromTo("#roll", { y: -36 * k }, { y: -36 * (k + 1), duration: 0.45, ease: "power3.inOut", immediateRender: false }, W(at - 0.1)),
+      );
+      [0.15, 3.5, 7.0, 10.5].forEach((at, k) =>
+        tl.fromTo(`#seg${k + 1}`, { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "power3.inOut" }, W(at)),
+      );
+
+      /* ---- Beat 1 ---- */
+      BLUR_IN("#s1-title .w", 0.1, { s: 0.07, d: 0.5 });
+      tl.fromTo("#fa .flow-label", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.08 }, W(0.3));
+      tl.fromTo(
+        "#fa .bar",
+        { clipPath: "inset(360px 0px 0px 0px round 10px)" },
+        { clipPath: "inset(0px 0px 0px 0px round 10px)", duration: 0.8, ease: "expo.out", stagger: 0.035 },
+        W(0.35),
+      );
+      tl.fromTo("#fa .pval", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out", stagger: 0.03 }, W(0.75));
+      tl.fromTo("#s1-card", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, W(0.55));
+      BLUR_IN("#s1-eq .t", 0.85, { s: 0.06, d: 0.45, blur: 6 });
+      tl.fromTo(["#s1-lg0", "#s1-lg1"], { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out", stagger: 0.1 }, W(1.35));
+      WORDS_IN("#s1-cap", 0.7, 0.035);
+      // exit beat 1 furniture
+      BLUR_OUT(["#s1-title", "#s1-card", "#s1-cap"], 3.42, { d: 0.24 });
+      tl.fromTo("#fa .pval", { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "power2.in", immediateRender: false }, W(3.5));
+
+      /* ---- Beat 2: collapse bars into bit boxes ---- */
+      BLUR_IN("#s2-title .w", 3.58, { s: 0.07, d: 0.5 });
+      const barsA = document.querySelectorAll("#fa .bar");
+      const boxesA = document.querySelectorAll("#fa .bitbox");
+      for (let f = 0; f < 3; f++) {
+        for (let j = 0; j < 3; j++) {
+          const i = f * 3 + j;
+          const t0 = collapseStart(f, j); // global time
+          tl.fromTo(
+            barsA[i],
+            { clipPath: "inset(0px 0px 0px 0px round 10px)" },
+            { clipPath: "inset(144px 0px 144px 0px round 10px)", duration: 0.34, ease: "power3.inOut", immediateRender: false },
+            t0 + 0.28,
+          );
+          tl.fromTo(barsA[i], { opacity: 1 }, { opacity: 0, duration: 0.16, ease: "none", immediateRender: false }, t0 + 0.56);
+          tl.fromTo(boxesA[i], { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, t0 + 0.52);
+        }
+      }
+      const downs = document.querySelectorAll("#fa .down path");
+      downs.forEach((p, f) => {
+        tl.fromTo(p, { strokeDasharray: 120, strokeDashoffset: 120 }, { strokeDashoffset: 0, duration: 0.4, ease: "power2.inOut" }, W(4.5 + 0.12 * f));
+      });
+      document.querySelectorAll("#fa .pathlab").forEach((lab, f) => {
+        tl.fromTo(lab.querySelectorAll(".c"), { opacity: 0 }, { opacity: 1, duration: 0.01, ease: "none", stagger: 0.045 }, W(4.78 + 0.12 * f));
+      });
+      tl.fromTo("#s2-card", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, W(3.62));
+      tl.fromTo("#s2-grid .cell", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "power3.out", stagger: 0.035 }, W(3.95));
+      tl.fromTo("#s2-hl", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, W(5.35));
+      tl.fromTo("#s2-hit-t", { color: "#5d6573" }, { color: "#e6e9ee", duration: 0.35, ease: "power2.out" }, W(5.35));
+      tl.fromTo("#s2-foot", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, W(4.7));
+      WORDS_IN("#s2-cap", 3.75, 0.035);
+      BLUR_OUT(["#s2-title", "#s2-card", "#s2-cap", "#fa"], 6.92, { d: 0.24 });
+
+      /* ---- Beat 3: scoring ---- */
+      BLUR_IN("#s3-title .w", 7.12, { s: 0.07, d: 0.5 });
+      tl.fromTo("#s3-fcard", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, W(7.18));
+      BLUR_IN("#s3-formula .t", 7.32, { s: 0.05, d: 0.45, blur: 6 });
+      const TERM_COL = { L: "#38e8ff", M: "#d29922", D: "#f85149" };
+      ["L", "M", "D"].forEach((k, n) => {
+        const at = W(7.95 + 0.28 * n);
+        tl.fromTo(`#term-${k}`, { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.55, ease: "expo.out" }, at);
+        tl.fromTo(`#tok-${k}`, { color: "#e6e9ee" }, { color: TERM_COL[k], duration: 0.35, ease: "power2.out" }, at);
+      });
+      tl.fromTo(["#race-head", "#race-base"], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out", stagger: 0.08 }, W(7.95));
+      cols.forEach((c, i) => {
+        tl.fromTo(c, { x: i * SLOT }, { x: i * SLOT, duration: 0.01 }, 0);
+        tl.fromTo(c.querySelector("i"), { scaleY: 0 }, { scaleY: 1, duration: 0.6, ease: "expo.out" }, W(8.1 + 0.03 * i));
+        tl.fromTo(
+          c,
+          { x: i * SLOT },
+          { x: sortedSlot[i] * SLOT, duration: 0.8, ease: "power3.inOut", immediateRender: false },
+          W(9.0 + 0.012 * Math.abs(sortedSlot[i] - i)),
+        );
+      });
+      tl.fromTo(cols[6].querySelector("i.best"), { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, W(9.78));
+      tl.fromTo("#best-lead", { scaleY: 0 }, { scaleY: 1, duration: 0.35, ease: "power3.out" }, W(9.85));
+      tl.fromTo("#best-tag", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.45, ease: "expo.out" }, W(9.92));
+      WORDS_IN("#s3-cap", 7.4, 0.035);
+      BLUR_OUT(["#s3-title", "#s3-fcard", ".terms", "#race", "#s3-cap"], 10.42, { d: 0.24 });
+
+      /* ---- Beat 4: rotation gate ---- */
+      BLUR_IN("#s4-title .w", 10.6, { s: 0.07, d: 0.5 });
+      tl.fromTo("#fb", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.6, ease: "expo.out" }, W(10.62));
+      tl.fromTo("#fb .tbit", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", stagger: 0.035 }, W(10.95));
+      tl.fromTo("#s4-card", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" }, W(10.72));
+      BLUR_IN(["#s4-uh", "#s4-mx"], 10.9, { s: 0.12, d: 0.5, blur: 6 });
+      tl.fromTo("#s4-note", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, W(11.0));
+      WORDS_IN("#s4-cap", 10.8, 0.035);
+      BLUR_OUT(["#s4-title", "#fb", "#s4-card", "#s4-cap"], 12.68, { d: 0.22 });
+
+      /* ---- Loop ---- */
+      tl.fromTo(["#chip1", "#ca1", "#chip2", "#ca2", "#chip3", "#ca3", "#chip4"], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out", stagger: 0.04 }, W(12.86));
+      tl.fromTo("#loop-arc", { strokeDasharray: 1500, strokeDashoffset: 1500 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.inOut" }, W(13.02));
+      tl.fromTo("#loop-head", { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, W(13.46));
+      tl.fromTo("#chip1", { borderColor: "rgba(255,255,255,0.09)" }, { borderColor: "rgba(76,141,255,0.9)", duration: 0.3, ease: "power2.out", immediateRender: false }, W(13.5));
+      BLUR_IN("#loop-line .w", 13.1, { s: 0.08, d: 0.45, blur: 6 });
+
+      /* ---- Loop seam: clear the card and rewind the HUD to its frame-0 state ---- */
+      BLUR_OUT([".chips", ".loop-svg", "#loop-line"], END_OUT, { d: 0.38, abs: true });
+      tl.fromTo("#roll", { y: -108 }, { y: 0, duration: 0.4, ease: "power3.inOut", immediateRender: false }, END_OUT);
+      tl.fromTo(["#seg1", "#seg2", "#seg3", "#seg4"], { scaleX: 1 }, { scaleX: 0, duration: 0.4, ease: "power3.inOut", immediateRender: false }, END_OUT);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

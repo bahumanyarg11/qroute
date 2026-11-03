@@ -1,0 +1,25 @@
+# secrets — never commit the real key
+.env
+**/.env
+# build / caches
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+*.bak
+film/out/
+film/build/
+# local scratch screenshots
+shot_*.png
+esri_test.jpg
+osm_test.png
+app/static/css/site_dark_backup.css
+# tool scaffolding / backups
+explainer/how-it-works/*.md
+**/.hyperframes/
+app/.c*
+# deck-build scripts (need local slide tooling)
+build.py
+figs.py
+app/static/index_dark_backup.html
+app/static/index_v2_backup.html

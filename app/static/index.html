@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q-Route — quantum-inspired network routing</title>
+<meta name="description" content="Q-Route races classical shortest-path routing against a quantum-inspired optimizer and keeps networks flowing when links congest or fibres fail.">
+<link rel="preload" href="/static/vendor/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
+<link rel="stylesheet" href="/static/css/site.css?v=11">
+</head>
+<body class="loading">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-enter" viewBox="0 0 24 24"><path d="M20 4v7a4 4 0 0 1-4 4H4"/><path d="m9 10-5 5 5 5"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="mk" viewBox="0 0 28 28"><circle cx="12.5" cy="12.5" r="8.5" fill="none" stroke="#12804F" stroke-width="3.2"/><circle cx="12.5" cy="12.5" r="2.6" fill="#12804F"/><path d="M18.6 18.6 24.5 24.5" stroke="#E8641B" stroke-width="3.2" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+
+<!-- ============================== LOADER ============================== -->
+<div id="loader" aria-live="polite">
+  <div class="l">
+    <div class="top"><span class="mark"><svg width="28" height="28"><use href="#mk"/></svg></span>Q-Route</div>
+    <div class="body">
+      <span class="eyebrow" data-ld><i></i>Hack-AI-Thon 2026 · Problem ET-08</span>
+      <h1 id="ldTitle">Q-Route</h1>
+      <p class="tag" data-ld>Quantum-inspired routing that keeps networks flowing when links congest or fibres fail.</p>
+      <p class="desc" data-ld>Q-Route runs the classic shortest-path router and a quantum-inspired optimizer on the same live network, scores both, and lets an LLM explain every decision in plain English. The same engine also plans deliveries, folds proteins, designs molecules and builds rosters.</p>
+      <div class="how3" data-ld>
+        <div><b>01 · STRESS</b><span>Add a traffic surge or cut a fibre link.</span></div>
+        <div><b>02 · RACE</b><span>Dijkstra and Q-Route re-plan the same traffic.</span></div>
+        <div><b>03 · EXPLAIN</b><span>See the score, then ask why a route moved.</span></div>
+      </div>
+      <div class="boot" data-ld>
+        <div class="row" data-b="0"><span class="st"></span>Loading network topology<span class="det"></span></div>
+        <div class="row" data-b="1"><span class="st"></span>Generating traffic flows<span class="det"></span></div>
+        <div class="row" data-b="2"><span class="st"></span>Preparing the Q-bit register<span class="det"></span></div>
+        <div class="row" data-b="3"><span class="st"></span>Racing both routers once<span class="det"></span></div>
+        <div class="row" data-b="4"><span class="st"></span>Connecting to Qualcomm Cloud AI<span class="det"></span></div>
+        <div class="bar"><i id="ldBar"></i></div>
+        <div class="foot"><span id="ldMsg">Starting…</span><span id="ldPct">0%</span></div>
+      </div>
+      <button class="btn pri lg mag" id="enter">Enter Q-Route <svg class="i arr"><use href="#i-arrow"/></svg></button>
+    </div>
+    <div class="bottom" data-ld><span>Team ReZero</span><span>R V College of Engineering, Bengaluru</span><span>Qualcomm Cloud AI Playground</span></div>
+  </div>
+  <div class="r"><canvas id="ld3d" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div>
+  <button id="skip">Skip intro ↵</button>
+</div>
+
+<div id="wipe"><i></i><i></i><i></i><i></i><i></i><div class="lbl" id="wipeLbl"></div></div>
+
+<!-- ============================== NAV ============================== -->
+<nav id="nav">
+  <a class="brand" href="#/"><span class="mark"><svg width="28" height="28"><use href="#mk"/></svg></span>Q-Route</a>
+  <div class="links" id="links">
+    <span class="pill" id="pill"></span>
+    <a href="#/" data-to="home">Overview</a>
+    <a href="#/how" data-to="how">How it works</a>
+    <a href="#/demo" data-to="demo">Live demo</a>
+    <a href="#/cases" data-to="cases">Use cases</a>
+    <a href="#/results" data-to="results">Results</a>
+    <a href="#/team" data-to="team">Team</a>
+  </div>
+  <div class="navr">
+    <button class="ib" id="themeBtn" title="Theme"><svg class="i"><use href="#i-sun" id="themeIco"/></svg></button>
+    <a class="btn ac sm mag" href="#/demo">Launch demo <svg class="i arr" style="width:15px;height:15px"><use href="#i-arrow"/></svg></a>
+  </div>
+  <div id="prog"></div>
+</nav>
+
+<main id="view">
+<!-- ============================== HOME ============================== -->
+<section class="page" data-page="home">
+  <div class="hero">
+    <div class="art"><canvas id="hero3d" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div>
+    <div class="wrap">
+      <div>
+        <span class="eyebrow" data-h><i></i>Team ReZero · Hack-AI-Thon 2026 · ET-08</span>
+        <h1 class="h1" data-split>Routing that survives <span class="grad">rush hour.</span></h1>
+        <p class="lead" data-h>When traffic surges or a fibre is cut, shortest-path routing piles everything onto the same links and drops packets. Q-Route searches the whole network the quantum-inspired way — and explains every reroute.</p>
+        <div class="ctas" data-h>
+          <a class="btn pri lg mag" href="#/demo">Launch live demo <svg class="i arr"><use href="#i-arrow"/></svg></a>
+          <button class="btn lg mag" data-film><svg class="i"><use href="#i-film"/></svg>Watch the 20-second film</button>
+        </div>
+        <div class="badges" data-h><span>Qualcomm Cloud AI Playground</span><span>Quantum-inspired (QIEA)</span><span>Explained by an LLM</span></div>
+      </div>
+      <div></div>
+    </div>
+    <div class="scrollhint"><i></i>scroll</div>
+  </div>
+
+  <section class="block" style="padding-top:20px">
+    <div class="wrap">
+      <div class="stats" data-r>
+        <div class="stat"><div class="v"><span data-count="2.18" data-dec="2">0</span><small>→ 0 Gbps</small></div><div class="k">traffic dropped</div><div class="s">Dijkstra → Q-Route, surge + fibre cut</div></div>
+        <div class="stat"><div class="v"><span data-count="82" data-dec="0">0</span><small>%</small></div><div class="k">busiest link</div><div class="s">vs 115% with shortest path</div></div>
+        <div class="stat"><div class="v"><span data-count="0.43" data-dec="2">0</span><small>s</small></div><div class="k">to re-plan 30 flows</div><div class="s">4,800 route sets scored</div></div>
+        <div class="stat"><div class="v">10<sup style="font-size:.5em">27</sup></div><div class="k">possible route sets</div><div class="s">30 flows × 8 paths each</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="storySec" style="padding:0">
+    <div class="wrap story">
+      <div>
+        <span class="eyebrow"><i></i>The problem</span>
+        <div class="steps-txt" style="margin-top:28px">
+          <div class="st-item"><div class="n">01 / 04 · Normal day</div><h3>Shortest path works — while the network is quiet.</h3><p>Every flow takes its shortest route. Links stay green and nobody notices the routing at all.</p></div>
+          <div class="st-item"><div class="n">02 / 04 · Rush hour</div><h3>A +50% surge piles traffic onto the same links.</h3><p>Shortest-path weights never look at load, so busy links get busier while detours sit idle.</p></div>
+          <div class="st-item"><div class="n">03 / 04 · Fibre cut</div><h3>One cut fibre — and packets start to drop.</h3><p>Re-convergence pushes everything onto the next shortest link. Two links go past capacity: 2.18 Gbps is lost.</p></div>
+          <div class="st-item"><div class="n">04 / 04 · Q-Route</div><h3>Q-Route spreads the load. Nothing is dropped.</h3><p>The quantum-inspired optimizer re-plans all 30 flows together in 0.4 s. Busiest link: 82%.</p></div>
+        </div>
+        <div class="dots" id="storyDots"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="scene" id="scene"><svg id="sceneSvg"></svg><span class="chip" id="sceneChip">NSFNET-14 · normal load</span><span class="loss" id="sceneLoss">2.18 Gbps lost</span></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><span class="eyebrow" data-r><i></i>Two routers, one network</span><h2 class="h2" data-split>Same traffic. Same failure. <span class="mut">Two very different answers.</span></h2></div>
+      <div class="vs">
+        <div class="card spot" data-r><h3 class="h3"><span class="sw" style="background:var(--mu)"></span>Classical · Dijkstra</h3><p class="mut" style="margin:0">The routing every network runs today (OSPF-style).</p>
+          <ul><li>Each flow picks its own shortest path</li><li>Never looks at how full a link is</li><li>Instant (&lt; 1 ms) — but blind to congestion</li></ul></div>
+        <div class="card spot good" data-r><h3 class="h3"><span class="sw" style="background:var(--ac)"></span>Q-Route · quantum-inspired</h3><p class="mut" style="margin:0">Plans all flows together, scored on latency, load and loss.</p>
+          <ul><li>Holds 8 candidate paths per flow in superposition</li><li>Rotation gates steer towards the best route set</li><li>0.4 s for 30 flows — then explains every change</li></ul></div>
+      </div>
+      <div class="card cmp" data-r id="cmp">
+        <div class="row"><span>Traffic lost</span><div class="bars"><div class="b" data-w="100"></div><div class="b q" data-w="1"></div></div><div class="vals">2.18 Gbps<br><span style="color:var(--ac)">0.00 Gbps</span></div></div>
+        <div class="row"><span>Busiest link</span><div class="bars"><div class="b" data-w="95.8"></div><div class="b q" data-w="68.3"></div></div><div class="vals">115%<br><span style="color:var(--ac)">82%</span></div></div>
+        <div class="row"><span>Average delay</span><div class="bars"><div class="b" data-w="81.5"></div><div class="b q" data-w="84"></div></div><div class="vals">33.2 ms<br><span style="color:var(--ac)">34.3 ms</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><span class="eyebrow" data-r><i></i>The idea</span><h2 class="h2" data-split>Borrow three ideas from quantum computing. <span class="mut">Run them on a laptop.</span></h2></div>
+      <div class="ideas">
+        <div class="card spot" data-r><svg class="vis" id="v1" viewBox="0 0 240 96"></svg><h3 class="h3">Superposition</h3><p>Each flow holds all 8 of its candidate paths at once, encoded in 3 Q-bits.</p></div>
+        <div class="card spot" data-r><svg class="vis" id="v2" viewBox="0 0 240 96"></svg><h3 class="h3">Measurement</h3><p>Sampling collapses the register into concrete routes — 16 route sets per generation.</p></div>
+        <div class="card spot" data-r><svg class="vis" id="v3" viewBox="0 0 240 96"></svg><h3 class="h3">Rotation gates</h3><p>Every Q-bit is nudged toward the best route set found so far, 300 times.</p></div>
+      </div>
+      <div style="margin-top:26px" data-r><a class="btn mag" href="#/how">See how it works <svg class="i arr"><use href="#i-arrow"/></svg></a></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><span class="eyebrow" data-r><i></i>Beyond networks</span><h2 class="h2" data-split>One engine. <span class="mut">Many problems.</span></h2>
+        <p class="lead" data-r>Anything shaped like “pick one option per item, under shared constraints, at minimum cost” runs on the same quantum-inspired core.</p></div>
+      <div class="domains">
+        <a class="card spot dom" data-r data-case="network" href="#/cases"><span class="dk">01 · ET-08</span><h3 class="h3">Network routing</h3><p>30 flows, a fibre cut.</p><div class="dv"><b>0</b> Gbps lost <span>vs 2.18</span></div></a>
+        <a class="card spot dom" data-r data-case="fleet" href="#/cases"><span class="dk">02 · LOGISTICS</span><h3 class="h3">Fleet delivery</h3><p>2 vans, 12 Bengaluru stops, real roads.</p><div class="dv"><b>0</b> late stops <span>vs 4</span></div></a>
+        <a class="card spot dom" data-r data-case="protein" href="#/cases"><span class="dk">03 · BIOLOGY</span><h3 class="h3">Protein folding</h3><p>3D HP lattice, 20 residues.</p><div class="dv"><b>10</b> H–H contacts <span>vs 6 greedy</span></div></a>
+        <a class="card spot dom" data-r data-case="drug" href="#/cases"><span class="dk">04 · CHEMISTRY</span><h3 class="h3">Drug design</h3><p>6 sites × 8 fragments.</p><div class="dv"><b>exact</b> optimum <span>of 262,144</span></div></a>
+        <a class="card spot dom" data-r data-case="roster" href="#/cases"><span class="dk">05 · HEALTHCARE</span><h3 class="h3">Shift rostering</h3><p>6 nurses × 7 days.</p><div class="dv"><b>0</b> rule breaks <span>vs 5</span></div></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block"><div class="wrap"><div class="cta" data-r>
+    <span class="eyebrow"><i></i>Live demo</span>
+    <h2 class="h2" style="margin-top:22px" data-split>Break the network yourself.</h2>
+    <p class="lead" style="margin:18px auto 0">Drag the surge slider, cut a fibre, type a rule in plain English — and watch both routers answer in real time.</p>
+    <div class="btns"><a class="btn pri lg mag" href="#/demo">Launch the console <svg class="i arr"><use href="#i-arrow"/></svg></a><button class="btn lg mag" data-film><svg class="i"><use href="#i-film"/></svg>Watch the film</button></div>
+  </div></div></section>
+  <footer><div class="wrap"><span>Q-Route · Team ReZero · R V College of Engineering, Bengaluru</span><span>Built on Qualcomm Cloud AI Playground · Hack-AI-Thon 2026 · ET-08</span></div></footer>
+</section>
+
+<!-- ============================== HOW ============================== -->
+<section class="page" data-page="how">
+  <div class="wrap phead">
+    <span class="eyebrow" data-h><i></i>How it works</span>
+    <h1 class="h1" style="margin:24px 0 22px;font-size:clamp(42px,5.4vw,80px)" data-split>How Q-Route decides.</h1>
+    <p class="lead" data-h>A quantum-inspired evolutionary algorithm (QIEA): superposition, measurement and rotation gates — simulated on a CPU, no quantum hardware needed.</p>
+  </div>
+  <div class="wrap"><div class="player" data-r><video id="howVid" muted loop playsinline preload="metadata" poster="/static/media/how-it-works-poster.jpg"><source src="/static/media/how-it-works.mp4" type="video/mp4"></video><div class="ph" id="howPh" hidden>Explainer clip is rendering…</div></div></div>
+  <div class="wrap hsteps">
+    <div class="hs" data-r><div class="no">01</div><div><h3>Superposition</h3><p>Every flow has 8 candidate paths. Three Q-bits encode them, each starting halfway between 0 and 1 — so the register holds every combination at once.</p><div class="eq">|ψ⟩ = cos θ |0⟩ + sin θ |1⟩</div></div><div class="viz"><svg id="h1v"></svg></div></div>
+    <div class="hs" data-r><div class="no">02</div><div><h3>Measurement</h3><p>Sampling each Q-bit (P(1) = sin²θ) collapses the register into one concrete route per flow. We take 16 samples per generation.</p><div class="eq">101 → path 5 · 010 → path 2 · 110 → path 6</div></div><div class="viz"><svg id="h2v"></svg></div></div>
+    <div class="hs" data-r><div class="no">03</div><div><h3>Scoring</h3><p>Each sampled route set gets one number that balances delay, the busiest link and lost traffic. Lower is better.</p><div class="eq">J = L + 100·max(0, MLU − 0.8) + 50·Drop</div></div><div class="viz"><svg id="h3v"></svg></div></div>
+    <div class="hs" data-r><div class="no">04</div><div><h3>Rotation gate</h3><p>Every Q-bit is turned slightly toward the best route set so far. After 300 generations the register has converged; if it stalls, tunnelling re-opens superposition.</p><div class="eq">U(Δθ) = [cos Δθ  −sin Δθ ; sin Δθ  cos Δθ], Δθ = 0.025π</div></div><div class="viz"><svg id="h4v"></svg></div></div>
+  </div>
+  <section class="block"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow" data-r><i></i>Safety by design</span><h2 class="h2" data-split>The LLM explains. <span class="mut">It never routes.</span></h2></div>
+    <div class="card" style="padding:30px" data-r>
+      <div class="flow"><div class="node"><b>OPERATOR</b>"Keep CA1 to PA under 50 ms"</div><span class="conn"></span><div class="node llm"><b>LLM · CLOUD AI 100</b>text → typed rule</div><span class="conn"></span><div class="node guard"><b>GUARD</b>schema + bounds ✓</div><span class="conn"></span><div class="node"><b>OPTIMIZER</b>QIEA routes</div><span class="conn"></span><div class="node llm"><b>LLM</b>plain-English “why”</div></div>
+      <p class="mut" style="margin:20px 0 0;font-size:14.5px">Unknown nodes, links or fields are rejected before the optimizer sees them. If the optimizer misses its 1-second budget, the network keeps its Dijkstra routes.</p>
+    </div>
+    <div class="plate" style="margin-top:18px" data-r><img src="/static/fig/s4_arch.svg?v=2" alt="Q-Route architecture"></div>
+  </div></section>
+  <section class="block" style="padding-top:0"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow" data-r><i></i>Classical vs quantum-inspired</span></div>
+    <div class="card" data-r><table class="tbl"><tr><th></th><th>Dijkstra</th><th>Q-Route (QIEA)</th></tr>
+      <tr><td>Decides</td><td>flow by flow</td><td class="q">all flows jointly</td></tr><tr><td>Looks at load</td><td>no — static weights</td><td class="q">yes, in cost J</td></tr>
+      <tr><td>Search</td><td>exact shortest path</td><td class="q">superposition sampling + rotation</td></tr><tr><td>Re-plan time</td><td>&lt; 1 ms</td><td class="q">0.43 s (30 flows)</td></tr><tr><td>Wins when</td><td>the network is idle</td><td class="q">congestion or failure</td></tr></table></div>
+  </div></section>
+  <footer><div class="wrap"><span>Q-Route · Team ReZero</span><a href="#/demo" class="mut">Try it live →</a></div></footer>
+</section>
+
+<!-- ============================== DEMO ============================== -->
+<section class="page" data-page="demo">
+  <div class="con">
+    <div class="stepper">
+      <div class="step cur" data-s="1"><span class="no">1</span><div><b>Stress the network</b><span>surge slider or cut a fibre</span></div></div>
+      <div class="step" data-s="2"><span class="no">2</span><div><b>Add a rule</b><span>optional · plain English</span></div></div>
+      <div class="step" data-s="3"><span class="no">3</span><div><b>Compare routers</b><span>same traffic, two answers</span></div></div>
+      <div class="step" data-s="4"><span class="no">4</span><div><b>Ask why</b><span>the LLM explains each reroute</span></div></div>
+      <button class="btn ac" id="present" style="height:auto"><svg class="i" style="fill:currentColor;stroke:none"><use href="#i-play"/></svg><span>Present</span></button>
+    </div>
+    <div class="verdict"><div class="big" id="verdict">Preparing the network…</div><div class="tags"><span class="tagc" id="vtopo">NSFNET-14</span><span class="tagc" id="vllm">LLM</span></div></div>
+    <div class="cgrid">
+      <div class="colp">
+        <div class="pn" id="p1"><div class="hd"><span class="n">01</span><h4>Stress the network</h4></div><div class="bd">
+          <div class="topo" id="topoBtns"></div>
+          <div class="lab">Traffic surge <b id="surgeVal">+50%</b></div>
+          <input type="range" id="surge" min="0" max="100" step="5" value="50"><div class="ticks"><span>normal</span><span>evening peak</span><span>spike</span></div>
+          <div class="lab" style="margin-top:16px">Cut a fibre <span class="mut" id="downN" style="font-size:12.5px"></span></div><div class="cuts" id="cuts"></div>
+          <div class="help">…or click any link directly on a map.</div>
+        </div></div>
+        <div class="pn" id="p2"><div class="hd"><span class="n">02</span><h4>Add a rule <span class="mut" style="font-weight:500">· optional</span></h4></div><div class="bd">
+          <textarea id="intent"></textarea>
+          <div style="display:flex;gap:6px;margin-top:8px"><button class="btn ac sm" id="parse" style="flex:1"><svg class="i" style="width:15px;height:15px"><use href="#i-enter"/></svg>Parse with LLM</button><button class="btn sm" id="clearC">Clear</button></div>
+          <div class="ex" id="examples"></div><div id="intentOut"></div><div class="rules" id="rules"></div>
+        </div></div>
+        <div class="pn"><div class="bd">
+          <button class="btn pri runbtn" id="run"><svg class="i" style="fill:currentColor;stroke:none"><use href="#i-play"/></svg>Run both routers</button>
+          <label class="switch"><input type="checkbox" id="auto" checked><i></i>Re-run automatically on every change</label>
+          <div class="help" id="lastRun"></div>
+          <button class="btn sm" id="reset" style="margin-top:10px"><svg class="i" style="width:15px;height:15px"><use href="#i-reset"/></svg>Reset scenario</button>
+        </div></div>
+      </div>
+      <div class="mid">
+        <div class="maps" id="mapsWrap">
+          <div class="pn" id="cardC"><div class="hd"><span class="who"><span class="sw" style="background:var(--mu)"></span><h4>Dijkstra <span class="mut" style="font-weight:500">classical</span></h4></span><span class="meta mono" id="hc"></span></div><div class="mapbox"><canvas id="map3C" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div></div>
+          <div class="pn" id="cardQ"><div class="hd"><span class="who"><span class="sw" style="background:var(--ac)"></span><h4>Q-Route <span class="mut" style="font-weight:500">quantum-inspired</span></h4></span><span class="meta mono" id="hq"></span></div><div class="mapbox"><canvas id="map3Q" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div></div>
+        </div>
+        <div class="bars3">
+          <div class="pn" id="b1"><div class="t"><b>Traffic lost</b><span>lower is better</span></div><div class="br c"><span>Dijkstra</span><div class="tr"><i style="background:var(--mu)"></i></div><span class="v">—</span></div><div class="br q"><span>Q-Route</span><div class="tr"><i style="background:var(--ac)"></i></div><span class="v">—</span></div></div>
+          <div class="pn" id="b2"><div class="t"><b>Busiest link</b><span>100% = full</span></div><div class="br c"><span>Dijkstra</span><div class="tr"><i style="background:var(--mu)"></i></div><span class="v">—</span></div><div class="br q"><span>Q-Route</span><div class="tr"><i style="background:var(--ac)"></i></div><span class="v">—</span></div></div>
+          <div class="pn" id="b3"><div class="t"><b>Average delay</b><span>lower is better</span></div><div class="br c"><span>Dijkstra</span><div class="tr"><i style="background:var(--mu)"></i></div><span class="v">—</span></div><div class="br q"><span>Q-Route</span><div class="tr"><i style="background:var(--ac)"></i></div><span class="v">—</span></div></div>
+        </div>
+      </div>
+      <div class="colp">
+        <div class="pn" id="p4"><div class="hd"><span class="n">04</span><h4>Why did it change?</h4><span class="meta"><span class="src" id="exSrc">—</span></span></div><div class="bd"><div id="explain" style="color:var(--mu)">Run both routers to get an explanation.</div><div class="help" id="traceNote"></div></div></div>
+        <div class="pn"><div class="hd"><h4>Rerouted flows</h4><span class="meta">click one to trace it</span></div><div class="bd" style="padding-top:6px"><table class="rr" id="moved"></table></div></div>
+        <div class="pn"><div class="hd"><h4>Ask Q-Route</h4></div><div class="bd"><div class="askb"><input type="text" id="askIn"><button class="ib" id="askBtn" title="Ask" style="width:42px;height:40px"><svg class="i"><use href="#i-arrow"/></svg></button></div><div class="sugg" id="sugg"></div><div id="chat"></div></div></div>
+        <div class="pn"><div class="hd"><button class="hoodbtn" id="hoodBtn">Under the hood <svg class="i" style="width:15px;height:15px"><use href="#i-chev"/></svg></button></div>
+          <div class="drawer" id="drawer"><div class="bd"><div class="lab">Convergence</div><svg id="conv"></svg><div class="lab" style="margin-top:8px">Q-bit register after the search</div><svg id="qb"></svg></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== USE CASES ============================== -->
+<section class="page" data-page="cases">
+  <div class="wrap phead" style="padding-bottom:30px">
+    <span class="eyebrow" data-h><i></i>One engine, many problems</span>
+    <h1 class="h1" style="margin:24px 0 22px;font-size:clamp(40px,5vw,76px)" data-split>Pick one option per item. <span class="mut">Minimise the cost.</span></h1>
+    <p class="lead" data-h>Network routing is only the first use. Swap the encoder and the cost function, and the same Q-bit search plans deliveries, folds proteins, designs molecules and builds rosters — each raced live against a classical baseline.</p>
+  </div>
+  <div class="wrap">
+    <div class="ctabs" id="ctabs" data-h>
+      <span class="cpill" id="cpill"></span>
+      <button data-c="network">Network routing<small>ET-08 · NSFNET</small></button>
+      <button data-c="fleet">Fleet delivery<small>Bengaluru · 2 vans</small></button>
+      <button data-c="protein">Protein folding<small>3D HP lattice</small></button>
+      <button data-c="drug">Drug design<small>fragment selection</small></button>
+      <button data-c="roster">Shift rostering<small>hospital week</small></button>
+    </div>
+    <div class="card case" id="case" data-h>
+      <div class="chead"><div><h2 class="h3" id="cTitle"></h2><p class="mut" id="cDesc"></p><div class="cchips" id="cChips"></div></div><div class="cctl" id="cCtl"></div></div>
+      <div class="cvs">
+        <div class="cpanel"><div class="cph"><span class="sw" style="background:var(--mu)"></span><b>Classical</b><span class="mut" id="cBase"></span><span class="cm mono" id="cMetC"></span></div><div class="v3" id="cvC"></div></div>
+        <div class="cpanel q"><div class="cph"><span class="sw" style="background:var(--ac)"></span><b>Q-Route engine</b><span class="cm mono" id="cMetQ"></span></div><div class="v3" id="cvQ"></div></div>
+      </div>
+      <div class="cfoot"><div class="cbars" id="cBars"></div><div class="cexp"><div class="lab">Why it wins <span class="src" id="cSrc">—</span></div><div id="cExp" class="mut">…</div></div></div>
+    </div>
+    <div class="notes" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <div class="card" data-r><b>Same core, different encoders</b>Every domain uses the identical QIEA loop — superposition, measurement, scoring, rotation. Only the meaning of the Q-bits and the cost function change.</div>
+      <div class="card" data-r><b>Always against a baseline</b>Each result is compared with the classical method people actually use first: nearest-neighbour routing, greedy folding, per-site best fit, greedy rostering.</div>
+      <div class="card" data-r><b>Honest scale</b>These are small, synthetic proof-of-concept models — optimisation demos, not real drug discovery, protein prediction or clinical scheduling.</div>
+    </div>
+  </div>
+  <section class="block" style="padding-top:60px"><div class="wrap" style="text-align:center"><a class="btn pri lg mag" href="#/demo">Try network routing live <svg class="i arr"><use href="#i-arrow"/></svg></a></div></section>
+  <footer><div class="wrap"><span>Q-Route Engine · Team ReZero</span><span>One quantum-inspired optimizer, many problems</span></div></footer>
+</section>
+
+<!-- ============================== RESULTS ============================== -->
+<section class="page" data-page="results">
+  <div class="wrap phead">
+    <span class="eyebrow" data-h><i></i>Benchmark</span>
+    <h1 class="h1" style="margin:24px 0 22px;font-size:clamp(42px,5.4vw,80px)" data-split>Measured, not promised.</h1>
+    <p class="lead" data-h>NSFNET-14 (14 cities, 21 links × 10 Gbps), 30 seeded traffic flows, three scenarios, 10 random seeds each. Every number here is re-computed by <span class="mono" style="color:var(--tx)">python3 benchmark.py</span>.</p>
+  </div>
+  <div class="wrap">
+    <div class="kgrid" id="rk"></div>
+    <div class="chgrid">
+      <div class="card chart" data-r><h3>Busiest link, three scenarios</h3><div class="sub">Above 100% the link is full and packets are dropped. Error bars: ±1 s.d. over 10 seeds.</div><svg id="c1"></svg><div class="legend"><span><i style="background:var(--mu)"></i>Dijkstra</span><span><i style="background:var(--ac)"></i>Q-Route</span></div></div>
+      <div class="card chart" data-r><h3>Traffic lost</h3><div class="sub">Random search gets the same 4,800 evaluations — the Q-bit update rule does the work.</div><svg id="c2"></svg><div class="legend"><span><i style="background:var(--mu)"></i>Dijkstra</span><span><i style="background:var(--wa)"></i>Random search</span><span><i style="background:var(--ac)"></i>Q-Route</span></div></div>
+      <div class="card chart" data-r><h3>Convergence under a fibre cut</h3><div class="sub">Cost J of the best route set found, averaged over 10 seeds.</div><svg id="c3"></svg></div>
+      <div class="card chart" data-r><h3>Scales linearly</h3><div class="sub">Same 41 Gbps load split over more flows. 120 flows ≈ 10¹⁰⁸ possible route sets.</div><svg id="c4"></svg></div>
+    </div>
+    <div class="plate" style="margin-top:18px" data-r><img src="/static/fig/s7_results.svg?v=2" alt="Route maps and score card"></div>
+    <div class="notes">
+      <div class="card" data-r><b>The honest trade-off</b>Q-Route's average delay is about 1 ms higher: it uses longer, idle paths so that nothing is dropped.</div>
+      <div class="card" data-r><b>Where it doesn't win outright</b>With only 15 very large flows, Q-Route roughly halves the loss (1.70 → 0.93 Gbps) but cannot remove it: unsplittable flows are hard to place.</div>
+      <div class="card" data-r><b>Reproduce it</b><pre class="code" style="margin-top:8px"><b>$</b> python3 benchmark.py
+<b>$</b> python3 scale.py</pre></div>
+    </div>
+  </div>
+  <section class="block" style="padding-top:60px"><div class="wrap" style="text-align:center"><a class="btn pri lg mag" href="#/demo">Run it live <svg class="i arr"><use href="#i-arrow"/></svg></a></div></section>
+  <footer><div class="wrap"><span>Q-Route · Team ReZero</span><span>Synthetic, seeded traffic — reproducible on any laptop</span></div></footer>
+</section>
+
+<!-- ============================== TEAM ============================== -->
+<section class="page" data-page="team">
+  <div class="wrap phead">
+    <span class="eyebrow" data-h><i></i>Team ReZero</span>
+    <h1 class="h1" style="margin:24px 0 22px;font-size:clamp(42px,5.4vw,80px)" data-split>Three engineers. One very busy network.</h1>
+    <p class="lead" data-h>R V College of Engineering, Bengaluru · Hack-AI-Thon 2026, Bengaluru edition · Problem statement ET-08: Quantum-Inspired Network Route Optimizer.</p>
+  </div>
+  <div class="wrap">
+    <div class="people">
+      <div class="card spot person" data-r><div class="avatar" style="background:#12804F">BR</div><div><h3 class="h3">Bahumanya R G</h3><div class="role">TEAM LEAD</div></div></div>
+      <div class="card spot person" data-r><div class="avatar" style="background:#E8641B">HV</div><div><h3 class="h3">Harshith V M</h3><div class="role">TEAM MEMBER</div></div></div>
+      <div class="card spot person" data-r><div class="avatar" style="background:#0B5E39">CK</div><div><h3 class="h3">Cheritha Kaiwar</h3><div class="role">TEAM MEMBER</div></div></div>
+    </div>
+  </div>
+  <div class="marquee"><div class="track" id="mq"><span>Qualcomm Cloud AI 100</span><span>Llama-3.1-8B</span><span>Python</span><span>FastAPI</span><span>NetworkX</span><span>NumPy</span><span>GSAP</span><span>Three.js</span><span>Remotion</span><span>HyperFrames</span></div></div>
+  <section class="block"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow" data-r><i></i>The film</span><h2 class="h2" data-split>Q-Route in 20 seconds.</h2></div>
+    <div class="player" data-r><video id="teamVid" controls playsinline preload="metadata" poster="/static/media/qroute-film-poster.jpg"><source src="/static/media/qroute-film.mp4" type="video/mp4"></video><div class="ph" id="teamPh" hidden>Film is rendering…</div></div>
+  </div></section>
+  <section class="block" style="padding-top:0"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow" data-r><i></i>What's next</span><h2 class="h2" data-split>From a laptop to a production SDN controller.</h2></div>
+    <div class="road">
+      <div class="card spot" data-r><h3><span class="sw" style="background:var(--ac)"></span>Next</h3><ol><li>Streaming telemetry (gNMI) feeds the optimizer live</li><li>GNN forecaster re-routes before congestion hits</li><li>Edge mode on Arduino UNO Q</li></ol></div>
+      <div class="card spot" data-r><h3><span class="sw" style="background:var(--ok)"></span>Scale</h3><ol><li>Measured: 120 flows in 1.5 s, zero loss</li><li>Parallel Q-populations on Cloud AI 100</li><li>REST plug-in for ONOS / OpenDaylight</li></ol></div>
+      <div class="card spot" data-r><h3><span class="sw" style="background:var(--wa)"></span>Secure</h3><ol><li>Role-based access, signed route changes</li><li>LLM sees topology metadata only</li><li>Human approval for big reroutes</li></ol></div>
+    </div>
+  </div></section>
+  <footer><div class="wrap"><span>Q-Route · Team ReZero · R V College of Engineering</span><span>Hack-AI-Thon 2026 · ET-08</span></div></footer>
+</section>
+</main>
+
+<div id="modal"><div class="box"><button class="ib x" id="mx"><svg class="i"><use href="#i-x"/></svg></button><div class="player"><video id="filmVid" controls playsinline preload="none" poster="/static/media/qroute-film-poster.jpg"><source src="/static/media/qroute-film.mp4" type="video/mp4"></video></div></div></div>
+<div id="toasts"></div>
+<div class="tip" id="tip"></div>
+<div id="stage"><div class="h"><b id="stN">Step 1 of 6</b><span id="stName"></span><span style="margin-left:auto"><kbd>Esc</kbd> stop</span></div><div class="t" id="stT"></div><div class="bar" id="stBar"></div></div>
+
+<script src="/static/vendor/gsap.min.js"></script>
+<script src="/static/vendor/ScrollTrigger.min.js"></script>
+<script src="/static/vendor/SplitText.min.js"></script>
+<script src="/static/vendor/CustomEase.min.js"></script>
+<script src="/static/vendor/ScrambleTextPlugin.min.js"></script>
+<script src="/static/vendor/maplibre-gl.js"></script>
+<script type="importmap">{"imports":{"three":"/static/vendor/three.module.js","three/addons/":"/static/vendor/addons/"}}</script>
+<script>window.Globe={mode(){},intro(){return Promise.resolve()},outro(){return Promise.resolve()},instant(){},step(){}};</script>
+<script type="module" src="/static/js/scene3d.js?v=14"></script>
+<script src="/static/js/console.js?v=11"></script>
+<script src="/static/js/cases.js?v=11"></script>
+<script src="/static/js/app.js?v=10"></script>
+</body>
+</html>

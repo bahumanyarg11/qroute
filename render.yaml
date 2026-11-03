@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: qroute
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd app && uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: IMAGINE_API_KEY
+        sync: false          # paste the Qualcomm Imagine key in the Render dashboard (optional: the app runs offline without it)
+      - key: IMAGINE_ENDPOINT
+        value: https://aisuite.cirrascale.com/apis/v2
+      - key: IMAGINE_MODEL
+        value: Llama-3.3-70B
