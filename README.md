@@ -87,7 +87,7 @@ Say it plainly if asked: these are small proof-of-concept models (optimisation d
 5. **Harshith** — slides 5–6 (45 s): where AI acts; the quantum-inspired loop (superposition → measure → score → rotate).
 6. **Bahumanya** — slide 7 (25 s): benchmark; honest trade-off (+1 ms latency, zero loss).
 7. **Cheritha drives the console, Bahumanya narrates** (90 s): press **D** (Present) — or by hand: surge slider → click NY–PA → type intent → Parse → click CA1→PA in the list → Ask why.
-8. **Cheritha** — slide 9 (20 s): works now vs next; security.
+8. **Cheritha** — slide 9 (20 s): works now vs. next; security.
 
 The talk track is in each slide's speaker notes.
 
